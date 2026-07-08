@@ -48,42 +48,72 @@ import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.ui.theme.StatusPaidText
 import com.example.myapplication.ui.theme.TextMuted
 import com.example.myapplication.ui.theme.TextSecondary
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import com.example.myapplication.core.NetworkMonitorImpl
 
 class MainActivity : ComponentActivity() {
 
     private val repository: IncomeDashboardRepository by lazy {
         IncomeDashboardRepositoryImpl(MockIncomeTransactions.incomeTransactions)
     }
-    private val incomeDashboardUseCase: GetIncomeDashboardUseCase  by lazy {
+
+    private val networkMonitor by lazy {
+        NetworkMonitorImpl(applicationContext)
+    }
+    private val incomeDashboardUseCase: GetIncomeDashboardUseCase by lazy {
         GetIncomeDashboardUseCase(repository)
     }
     private val dashboardVM: IncomeDashboardViewModel by viewModels {
-        ViewModelFactory { IncomeDashboardViewModel(incomeDashboardUseCase) }
+        ViewModelFactory { IncomeDashboardViewModel(incomeDashboardUseCase, networkMonitor) }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             val uiState by dashboardVM.incomeDashboardUiState.collectAsStateWithLifecycle()
             MyApplicationTheme {
-                when(val state = uiState)  {
+                when (val state = uiState) {
                     is IncomeDashboardUiState.Loading -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator()
                         }
                     }
+
                     is IncomeDashboardUiState.Success -> {
-                        IncomeDashboardScreen(dashboard = state.data)
+                        if (state.data.recentTransaction.isNotEmpty()) {
+                            IncomeDashboardScreen(dashboard = state.data)
+                        } else {
+                            EmptyRecentTransactions()
+                        }
                     }
+
                     is IncomeDashboardUiState.Error -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(text = state.message)
                         }
                     }
-                }
+
+                    is IncomeDashboardUiState.NoInternet -> {
+                        NoInternetScreen {
+                            dashboardVM.loadIncomeDashboardData()
+                        }
+                    }
                 }
             }
         }
+    }
 
 }
 
@@ -166,7 +196,7 @@ fun IncomeDashboardScreen(
 }
 
 @Composable
-private fun TotalIncomeCard(amount: Double){
+private fun TotalIncomeCard(amount: Double) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -257,8 +287,86 @@ private fun StatusBadge(status: IncomeTransactionStatus) {
             .clip(RoundedCornerShape(20.dp))
             .background(bg)
             .padding(horizontal = 12.dp, vertical = 4.dp)
-    ){
+    ) {
         Text(text = label, style = MaterialTheme.typography.labelMedium, color = text)
+    }
+}
+
+@Composable
+fun EmptyRecentTransactions() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Default.List, // or Icons.Default.Info
+                contentDescription = null,
+                tint = TextMuted,
+                modifier = Modifier.size(40.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "No income record yet",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextSecondary
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Your paid invoices will show up once clients pay you",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+fun NoInternetScreen(
+    onRetryClicked: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White)
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = Color(0xFF8B2E2E),
+                modifier = Modifier.size(48.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Couldn't load your dashboard",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Check your connection and try again.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedButton(
+                onClick = onRetryClicked
+            ) {
+                Text("Retry")
+            }
+        }
     }
 }
 
