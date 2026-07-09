@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.core.NetworkMonitor
 import com.example.myapplication.domain.GetIncomeDashboardUseCase
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -17,12 +18,16 @@ class IncomeDashboardViewModel(private val getIncomeDashboardUseCase: GetIncomeD
         IncomeDashboardUiState.Loading)
     val incomeDashboardUiState = _incomeDashboardUiState.asStateFlow()
 
+    private var loadJob: Job? = null
+
     init {
         loadIncomeDashboardData()
     }
 
     fun loadIncomeDashboardData() {
-        viewModelScope.launch {
+        // Cancel previous request if user retries quickly
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _incomeDashboardUiState.value = IncomeDashboardUiState.Loading
 
             if(!networkMonitor.isConnected()) {

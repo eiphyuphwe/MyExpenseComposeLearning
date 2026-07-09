@@ -36,7 +36,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.myapplication.data.repository.IncomeDashboardRepository
 import com.example.myapplication.data.repository.IncomeDashboardRepositoryImpl
 import com.example.myapplication.domain.GetIncomeDashboardUseCase
-import com.example.myapplication.mock.MockIncomeTransactions
 import com.example.myapplication.model.IncomeDashboard
 import com.example.myapplication.model.IncomeTransaction
 import com.example.myapplication.model.IncomeTransactionStatus
@@ -55,11 +54,12 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import com.example.myapplication.core.NetworkMonitorImpl
+import com.example.myapplication.data.remote.RetrofitClient
 
 class MainActivity : ComponentActivity() {
 
     private val repository: IncomeDashboardRepository by lazy {
-        IncomeDashboardRepositoryImpl(MockIncomeTransactions.incomeTransactions)
+        IncomeDashboardRepositoryImpl(RetrofitClient.api)
     }
 
     private val networkMonitor by lazy {
@@ -180,7 +180,7 @@ fun IncomeDashboardScreen(
             LazyColumn(modifier = Modifier.weight(1f)) {
                 itemsIndexed(
                     items = dashboard.recentTransaction,
-                    key = { _, txn -> txn.transactionId }
+                    key = { _, txn -> txn.id }
                 ) { index, txn ->
                     TransactionRow(txn)
                     if (index < dashboard.recentTransaction.lastIndex) {
@@ -271,7 +271,9 @@ private fun TransactionRow(transaction: IncomeTransaction) {
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(Modifier.height(4.dp))
-            StatusBadge(transaction.status)
+            transaction.status?.let {
+                StatusBadge(transaction.status)
+            }
         }
     }
 }

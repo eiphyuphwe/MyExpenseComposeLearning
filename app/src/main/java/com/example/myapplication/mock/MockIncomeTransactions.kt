@@ -5,7 +5,7 @@ import com.example.myapplication.model.IncomeTransactionStatus
 
 object MockIncomeTransactions {
 
-    val incomeTransactions = listOf(
+    var incomeTransactions = listOf(
         IncomeTransaction(
             transactionId = "TXN-1042",
             clientName = "Acme Media Ltd",
