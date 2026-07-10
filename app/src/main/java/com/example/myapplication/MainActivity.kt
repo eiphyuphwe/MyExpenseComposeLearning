@@ -51,10 +51,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.example.myapplication.core.NetworkMonitorImpl
 import com.example.myapplication.data.remote.RetrofitClient
+import com.example.myapplication.model.filter.IncomeTransactionFilterStatus
+import com.example.myapplication.model.filter.displayName
 
 class MainActivity : ComponentActivity() {
 
@@ -90,7 +100,9 @@ class MainActivity : ComponentActivity() {
 
                     is IncomeDashboardUiState.Success -> {
                         if (state.data.recentTransaction.isNotEmpty()) {
-                            IncomeDashboardScreen(dashboard = state.data)
+                            IncomeDashboardScreen(dashboard = state.data,
+                                selectedFilter = state.incomeTransactionFilterStatus,
+                                onFilterSelected = dashboardVM::filterIncomeTransactionsByStatus)
                         } else {
                             EmptyRecentTransactions()
                         }
@@ -128,7 +140,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun IncomeDashboardScreen(
     dashboard: IncomeDashboard,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedFilter: IncomeTransactionFilterStatus,
+    onFilterSelected: (IncomeTransactionFilterStatus) -> Unit
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -150,7 +164,7 @@ fun IncomeDashboardScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            TotalIncomeCard(amount = dashboard.totalIncomeReceived)
+            dashboard.totalIncomeReceived?.let { TotalIncomeCard(amount = it) }
 
             Spacer(Modifier.height(12.dp))
 
@@ -174,6 +188,13 @@ fun IncomeDashboardScreen(
                 text = "Recent transactions",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
+            )
+            Spacer(Modifier.height(10.dp))
+
+            TransactionStatusFilterDropdown(
+                selectedFilter = selectedFilter,
+                onFilterSelected = onFilterSelected,
+                modifier = modifier
             )
             Spacer(Modifier.height(4.dp))
 
@@ -381,6 +402,83 @@ private fun formatCurrency(amount: Double): String =
 @Composable
 fun GreetingPreview() {
     MyApplicationTheme {
-        Greeting("Android")
+        TransactionStatusFilterDropdown(
+            IncomeTransactionFilterStatus.PAID,
+            {}
+        )
     }
 }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun TransactionStatusFilterDropdown(
+        selectedFilter: IncomeTransactionFilterStatus,
+        onFilterSelected: (IncomeTransactionFilterStatus) -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        // Controls whether the dropdown menu is open or closed
+        var expanded by remember { mutableStateOf(false) }
+
+        // List of filter options shown in the dropdown
+        val filterOptions = IncomeTransactionFilterStatus.entries
+
+        Column(modifier = modifier.fillMaxWidth()) {
+
+            // Label above dropdown
+            Text(
+                text = "Filter by status",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = {
+                    // Open/close dropdown when user taps the field
+                    expanded = !expanded
+                }
+            ) {
+                OutlinedTextField(
+                    value = selectedFilter.displayName(),
+                    onValueChange = {
+                        // Read-only field, so we do not update text manually
+                    },
+                    readOnly = true,
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    singleLine = true,
+
+                    // Dropdown arrow icon
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = expanded
+                        )
+                    }
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = {
+                        // Close dropdown when user taps outside
+                        expanded = false
+                    }
+                ) {
+                    filterOptions.forEach { filter ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = filter.displayName())
+                            },
+                            onClick = {
+                                // 1. Send selected filter to ViewModel
+                                onFilterSelected(filter)
+
+                                // 2. Close dropdown after selecting item
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }

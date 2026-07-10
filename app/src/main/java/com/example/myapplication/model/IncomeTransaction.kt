@@ -6,5 +6,5 @@ data class IncomeTransaction(
     val clientName: String,
     val amount: Double,
     val date: String,
-    val status: IncomeTransactionStatus?
+    val status: IncomeTransactionStatus
 )
