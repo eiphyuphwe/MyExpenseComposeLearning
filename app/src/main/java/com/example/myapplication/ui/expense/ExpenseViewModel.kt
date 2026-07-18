@@ -8,6 +8,7 @@ import com.example.myapplication.domain.AddExpenseUseCase
 import com.example.myapplication.model.expense.Expense
 import com.example.myapplication.utils.Resource
 import com.example.myapplication.utils.toConvertExpenseCategory
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -16,7 +17,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ExpenseViewModel(val expenseUseCase: AddExpenseUseCase) : ViewModel() {
+import javax.inject.Inject
+
+@HiltViewModel
+class ExpenseViewModel @Inject constructor(val expenseUseCase: AddExpenseUseCase) : ViewModel() {
     private var _expenseUIState = MutableStateFlow<ExpenseUIState>(ExpenseUIState())
     val expenseUIState = _expenseUIState.asStateFlow() //laoding
     private var _expenseUIEvent = MutableSharedFlow<ExpenseUiEvent>() //for one time event

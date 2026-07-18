@@ -2,8 +2,9 @@ package com.example.myapplication.domain
 
 import com.example.myapplication.model.taxcalculation.NzTaxBrackets
 import java.math.BigDecimal
+import javax.inject.Inject
 
-class TaxCalculationUseCase {
+class TaxCalculationUseCase @Inject constructor(){
     suspend fun calculateTax(income: BigDecimal): BigDecimal {
         var totalTax = BigDecimal.ZERO
         for (bracket in NzTaxBrackets.brackets) {

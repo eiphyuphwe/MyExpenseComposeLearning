@@ -6,11 +6,12 @@ import com.example.myapplication.model.IncomeTransaction
 import com.example.myapplication.model.IncomeTransactionStatus
 import com.example.myapplication.model.filter.IncomeTransactionFilterStatus
 import kotlinx.coroutines.delay
+import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
 const val taxPercentage: Double = 0.2
 
-class GetIncomeDashboardUseCase(private val repository: IncomeDashboardRepository) {
+class GetIncomeDashboardUseCase @Inject constructor(private val repository: IncomeDashboardRepository) {
 
     suspend fun getIncomeDashBoard(): IncomeDashboard {
         delay(2000.milliseconds)

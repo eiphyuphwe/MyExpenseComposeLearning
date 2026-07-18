@@ -7,13 +7,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.domain.TaxCalculationUseCase
 import com.example.myapplication.model.taxcalculation.TaxData
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class TaxCalculatorViewModel(
+import javax.inject.Inject
+
+@HiltViewModel
+class TaxCalculatorViewModel @Inject constructor(
     private val taxCalculationUseCase: TaxCalculationUseCase
 ) : ViewModel() {
     private var _totalTax = MutableStateFlow<TaxData>(TaxData())

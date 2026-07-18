@@ -9,8 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class ExpenseRepositoryImpl(private val dao: ExpenseDao) : ExpenseRepository {
+class ExpenseRepositoryImpl @Inject constructor(private val dao: ExpenseDao) : ExpenseRepository {
     override suspend fun addExpense(expense: Expense): Resource<Unit> {
         return try {
             withContext(Dispatchers.IO) {

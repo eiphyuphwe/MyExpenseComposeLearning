@@ -28,10 +28,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.myapplication.data.repository.IncomeDashboardRepository
-import com.example.myapplication.data.repository.IncomeDashboardRepositoryImpl
-import com.example.myapplication.domain.GetIncomeDashboardUseCase
-import com.example.myapplication.ui.common.ViewModelFactory
 import com.example.myapplication.ui.dashboard.IncomeDashboardUiState
 import com.example.myapplication.ui.dashboard.IncomeDashboardViewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
@@ -49,16 +45,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.room.Room
-import com.example.myapplication.core.NetworkMonitorImpl
-import com.example.myapplication.data.local.AppDatabase
-import com.example.myapplication.data.remote.RetrofitClient
-import com.example.myapplication.data.repository.expense.ExpenseRepository
-import com.example.myapplication.data.repository.expense.ExpenseRepositoryImpl
-import com.example.myapplication.domain.AddExpenseUseCase
-import com.example.myapplication.domain.TaxCalculationUseCase
 import com.example.myapplication.model.filter.IncomeTransactionFilterStatus
 import com.example.myapplication.model.filter.displayName
 import com.example.myapplication.ui.dashboard.EmptyRecentTransactions
@@ -68,56 +54,16 @@ import com.example.myapplication.ui.expense.ExpenseViewModel
 import com.example.myapplication.ui.navigation.AppMainScreen
 import com.example.myapplication.ui.taxcalculator.TaxCalculatorScreen
 import com.example.myapplication.ui.taxcalculator.TaxCalculatorViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    private val repository: IncomeDashboardRepository by lazy {
-        IncomeDashboardRepositoryImpl(RetrofitClient.api)
-    }
-
-    private val networkMonitor by lazy {
-        NetworkMonitorImpl(applicationContext)
-    }
-    private val incomeDashboardUseCase: GetIncomeDashboardUseCase by lazy {
-        GetIncomeDashboardUseCase(repository)
-    }
-    private val dashboardVM: IncomeDashboardViewModel by viewModels {
-        ViewModelFactory { IncomeDashboardViewModel(incomeDashboardUseCase, networkMonitor) }
-    }
-    private val db by lazy {
-        Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "expense_db"
-        ).build()
-    }
-    private val expenseDao by lazy { db.expenseDao() }
-    private val expenseRepo: ExpenseRepository by lazy { ExpenseRepositoryImpl(expenseDao) }
-    private val expenseUseCase: AddExpenseUseCase by lazy { AddExpenseUseCase(expenseRepo) }
-
-    private lateinit var expenseViewModel: ExpenseViewModel
-
-    private lateinit var taxViewModel: TaxCalculatorViewModel
-    val taxCalculationUseCase = TaxCalculationUseCase()
+    private val dashboardVM: IncomeDashboardViewModel by viewModels()
+    private val expenseViewModel: ExpenseViewModel by viewModels()
+    private val taxViewModel: TaxCalculatorViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        expenseViewModel = ViewModelProvider(
-            this,
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ExpenseViewModel(expenseUseCase) as T
-                }
-            }
-        )[ExpenseViewModel::class.java]
-        taxViewModel = ViewModelProvider(
-            this,
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return TaxCalculatorViewModel(taxCalculationUseCase) as T
-                }
-            }
-        )[TaxCalculatorViewModel::class.java]
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {

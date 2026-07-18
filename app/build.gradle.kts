@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    // Hilt
+    alias(libs.plugins.hilt.android)
+
 }
 
 android {
@@ -67,7 +70,10 @@ dependencies {
     implementation(libs.room.ktx)
 
     ksp(libs.room.compiler)
-
+//hilt
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
     testImplementation("junit:junit:4.13.2")

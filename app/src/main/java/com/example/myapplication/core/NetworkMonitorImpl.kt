@@ -5,9 +5,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.annotation.RequiresPermission
+import dagger.hilt.android.qualifiers.ApplicationContext
+import jakarta.inject.Inject
 
-class NetworkMonitorImpl(
-    private val context: Context
+class NetworkMonitorImpl @Inject constructor(
+    @ApplicationContext private val context: Context
 ): NetworkMonitor {
     @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
     override fun isConnected(): Boolean {

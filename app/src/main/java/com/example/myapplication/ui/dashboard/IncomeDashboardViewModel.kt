@@ -6,13 +6,17 @@ import com.example.myapplication.core.NetworkMonitor
 import com.example.myapplication.domain.GetIncomeDashboardUseCase
 import com.example.myapplication.model.IncomeDashboard
 import com.example.myapplication.model.filter.IncomeTransactionFilterStatus
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 
-class IncomeDashboardViewModel(
+import javax.inject.Inject
+
+@HiltViewModel
+class IncomeDashboardViewModel @Inject constructor(
     private val getIncomeDashboardUseCase: GetIncomeDashboardUseCase,
     private val networkMonitor: NetworkMonitor
 ) :

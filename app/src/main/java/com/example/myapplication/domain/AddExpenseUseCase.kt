@@ -4,8 +4,9 @@ import com.example.myapplication.data.repository.expense.ExpenseRepository
 import com.example.myapplication.model.expense.Expense
 import com.example.myapplication.utils.Resource
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class AddExpenseUseCase(private val expenseRepository: ExpenseRepository) {
+class AddExpenseUseCase @Inject constructor(private val expenseRepository: ExpenseRepository) {
 
     suspend fun addExpense(expense: Expense): Resource<Unit> {
         return expenseRepository.addExpense(expense)
