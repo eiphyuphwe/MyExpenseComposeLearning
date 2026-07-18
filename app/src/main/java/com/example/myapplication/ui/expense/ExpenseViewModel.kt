@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.domain.AddExpenseUseCase
 import com.example.myapplication.model.expense.Expense
 import com.example.myapplication.utils.Resource
+import com.example.myapplication.utils.covertToDateLong
 import com.example.myapplication.utils.toConvertExpenseCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -102,7 +103,7 @@ class ExpenseViewModel @Inject constructor(val expenseUseCase: AddExpenseUseCase
                     title = formSate.title,
                     category = formSate.category.toConvertExpenseCategory(),
                     amount = formSate.amount.toDouble(),
-                    date = System.currentTimeMillis()
+                    date = formSate.date.covertToDateLong()
                 )
             )
             when (result) {

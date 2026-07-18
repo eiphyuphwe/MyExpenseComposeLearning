@@ -27,7 +27,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -54,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.myapplication.model.expense.Expense
+import com.example.myapplication.model.expense.ExpenseCategory
 import com.example.myapplication.ui.theme.AppBackground
 import com.example.myapplication.ui.theme.OutlineColor
 import com.example.myapplication.ui.theme.PurpleContainer
@@ -194,10 +198,9 @@ fun AddExpenseCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                ExpenseTextField(
-                    value = state.category,
-                    onValueChange = onCategoryChange,
-                    label = "Category",
+                ExpenseCategoryDropdown(
+                    selectedCategory = state.category,
+                    onCategorySelected = onCategoryChange,
                     error = state.categoryError,
                     modifier = Modifier.weight(1f)
                 )
@@ -254,6 +257,71 @@ fun AddExpenseCard(
             },
             onDismiss = { showDatePicker = false }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpenseCategoryDropdown(
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    error: String? = null
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val categories = ExpenseCategory.entries.map { it.name.toDisplayName() }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = selectedCategory,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Category") },
+            placeholder = { Text("Select category") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            isError = error != null,
+            supportingText = error?.let { message -> { Text(message) } },
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PurplePrimary,
+                unfocusedBorderColor = OutlineColor,
+                focusedContainerColor = AppBackground,
+                unfocusedContainerColor = AppBackground,
+                focusedLabelColor = PurplePrimary
+            ),
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(SurfaceWhite)
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = category,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextPrimary
+                        )
+                    },
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
+        }
     }
 }
 

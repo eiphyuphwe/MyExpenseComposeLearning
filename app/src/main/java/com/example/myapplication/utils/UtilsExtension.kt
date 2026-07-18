@@ -2,7 +2,7 @@ package com.example.myapplication.utils
 
 import com.example.myapplication.model.expense.ExpenseCategory
 import java.time.Instant
-import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -20,12 +20,12 @@ fun String.covertToDateLong(): Long {
     // Define the pattern matching your string structure
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    // Parse to LocalDateTime
-    val localDateTime = LocalDateTime.parse(this, formatter)
+    // Parse to LocalDate
+    val localDate = LocalDate.parse(this, formatter)
 
     // Convert to epoch milliseconds using a specific time zone
     val dateLong =
-        localDateTime.atZone(ZoneId.systemDefault())
+        localDate.atStartOfDay(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
     return dateLong

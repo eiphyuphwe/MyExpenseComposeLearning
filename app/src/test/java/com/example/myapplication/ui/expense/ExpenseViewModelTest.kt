@@ -87,6 +87,7 @@ class ExpenseViewModelTest {
         viewModel.onTitleChange("Lunch")
         viewModel.onCategoryChange("FOOD")
         viewModel.onAmountChange("15.0")
+        viewModel.onDateChange("2024-03-20")
         
         coEvery { useCase.addExpense(any()) } returns Resource.Success(Unit)
 
@@ -104,7 +105,7 @@ class ExpenseViewModelTest {
         }
 
         coVerify { useCase.addExpense(match { 
-            it.title == "Lunch" && it.amount == 15.0 && it.category == ExpenseCategory.FOOD
+            it.title == "Lunch" && it.amount == 15.0 && it.category == ExpenseCategory.FOOD && it.date > 0
         }) }
     }
 
@@ -114,6 +115,7 @@ class ExpenseViewModelTest {
         viewModel.onTitleChange("Lunch")
         viewModel.onCategoryChange("FOOD")
         viewModel.onAmountChange("15.0")
+        viewModel.onDateChange("2024-03-20")
         
         val errorMessage = "Failed to save"
         coEvery { useCase.addExpense(any()) } returns Resource.Error(errorMessage, Exception())
