@@ -6,22 +6,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,20 +31,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.myapplication.data.repository.IncomeDashboardRepository
 import com.example.myapplication.data.repository.IncomeDashboardRepositoryImpl
 import com.example.myapplication.domain.GetIncomeDashboardUseCase
-import com.example.myapplication.model.IncomeDashboard
-import com.example.myapplication.model.IncomeTransaction
-import com.example.myapplication.model.IncomeTransactionStatus
 import com.example.myapplication.ui.common.ViewModelFactory
 import com.example.myapplication.ui.dashboard.IncomeDashboardUiState
 import com.example.myapplication.ui.dashboard.IncomeDashboardViewModel
-import com.example.myapplication.ui.theme.CardBackground
 import com.example.myapplication.ui.theme.MyApplicationTheme
-import com.example.myapplication.ui.theme.StatusPaidText
-import com.example.myapplication.ui.theme.TextMuted
 import com.example.myapplication.ui.theme.TextSecondary
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,10 +49,25 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.room.Room
 import com.example.myapplication.core.NetworkMonitorImpl
+import com.example.myapplication.data.local.AppDatabase
 import com.example.myapplication.data.remote.RetrofitClient
+import com.example.myapplication.data.repository.expense.ExpenseRepository
+import com.example.myapplication.data.repository.expense.ExpenseRepositoryImpl
+import com.example.myapplication.domain.AddExpenseUseCase
+import com.example.myapplication.domain.TaxCalculationUseCase
 import com.example.myapplication.model.filter.IncomeTransactionFilterStatus
 import com.example.myapplication.model.filter.displayName
+import com.example.myapplication.ui.dashboard.EmptyRecentTransactions
+import com.example.myapplication.ui.dashboard.IncomeDashboardScreen
+import com.example.myapplication.ui.expense.ExpenseScreen
+import com.example.myapplication.ui.expense.ExpenseViewModel
+import com.example.myapplication.ui.navigation.AppMainScreen
+import com.example.myapplication.ui.taxcalculator.TaxCalculatorScreen
+import com.example.myapplication.ui.taxcalculator.TaxCalculatorViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -81,264 +84,100 @@ class MainActivity : ComponentActivity() {
     private val dashboardVM: IncomeDashboardViewModel by viewModels {
         ViewModelFactory { IncomeDashboardViewModel(incomeDashboardUseCase, networkMonitor) }
     }
+    private val db by lazy {
+        Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "expense_db"
+        ).build()
+    }
+    private val expenseDao by lazy { db.expenseDao() }
+    private val expenseRepo: ExpenseRepository by lazy { ExpenseRepositoryImpl(expenseDao) }
+    private val expenseUseCase: AddExpenseUseCase by lazy { AddExpenseUseCase(expenseRepo) }
+
+    private lateinit var expenseViewModel: ExpenseViewModel
+
+    private lateinit var taxViewModel: TaxCalculatorViewModel
+    val taxCalculationUseCase = TaxCalculationUseCase()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        expenseViewModel = ViewModelProvider(
+            this,
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return ExpenseViewModel(expenseUseCase) as T
+                }
+            }
+        )[ExpenseViewModel::class.java]
+        taxViewModel = ViewModelProvider(
+            this,
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return TaxCalculatorViewModel(taxCalculationUseCase) as T
+                }
+            }
+        )[TaxCalculatorViewModel::class.java]
         enableEdgeToEdge()
         setContent {
-            val uiState by dashboardVM.incomeDashboardUiState.collectAsStateWithLifecycle()
             MyApplicationTheme {
-                when (val state = uiState) {
-                    is IncomeDashboardUiState.Loading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+                AppMainScreen(
+                    incomeDashboardRoute = {
+                        val uiState by dashboardVM.incomeDashboardUiState.collectAsStateWithLifecycle()
+                        when (val state = uiState) {
+                            is IncomeDashboardUiState.Loading -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+
+                            is IncomeDashboardUiState.Success -> {
+                                if (state.data.recentTransaction.isNotEmpty()) {
+                                    IncomeDashboardScreen (
+                                        dashboard = state.data,
+                                        selectedFilter = state.incomeTransactionFilterStatus,
+                                        onFilterSelected = dashboardVM::filterIncomeTransactionsByStatus
+                                    )
+                                } else {
+                                    EmptyRecentTransactions()
+                                }
+                            }
+
+                            is IncomeDashboardUiState.Error -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = state.message)
+                                }
+                            }
+
+                            is IncomeDashboardUiState.NoInternet -> {
+                                NoInternetScreen {
+                                    dashboardVM.loadIncomeDashboardData()
+                                }
+                            }
                         }
+                    },
+                    expenseRoute = {
+                        ExpenseScreen(
+                            viewModel = expenseViewModel
+                        )
+                    },
+                    taxRoute = {
+                        TaxCalculatorScreen(
+                            innerPadding = PaddingValues(),
+                            viewModel = taxViewModel,
+                        )
                     }
-
-                    is IncomeDashboardUiState.Success -> {
-                        if (state.data.recentTransaction.isNotEmpty()) {
-                            IncomeDashboardScreen(dashboard = state.data,
-                                selectedFilter = state.incomeTransactionFilterStatus,
-                                onFilterSelected = dashboardVM::filterIncomeTransactionsByStatus)
-                        } else {
-                            EmptyRecentTransactions()
-                        }
-                    }
-
-                    is IncomeDashboardUiState.Error -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = state.message)
-                        }
-                    }
-
-                    is IncomeDashboardUiState.NoInternet -> {
-                        NoInternetScreen {
-                            dashboardVM.loadIncomeDashboardData()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello Ei Phyu Phwe$name!",
-        modifier = modifier
-    )
-}
-
-@Composable
-fun IncomeDashboardScreen(
-    dashboard: IncomeDashboard,
-    modifier: Modifier = Modifier,
-    selectedFilter: IncomeTransactionFilterStatus,
-    onFilterSelected: (IncomeTransactionFilterStatus) -> Unit
-) {
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = CardBackground
-    ) {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color.White)
-                .padding(20.dp)
-        ) {
-            Text(
-                text = "Income dashboard",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            dashboard.totalIncomeReceived?.let { TotalIncomeCard(amount = it) }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SummaryCard(
-                    label = "Tax set aside",
-                    amount = dashboard.taxSetAside,
-                    modifier = Modifier.weight(1f)
-                )
-                SummaryCard(
-                    label = "Net available",
-                    amount = dashboard.netAvailable,
-                    modifier = Modifier.weight(1f),
-                    valueColor = StatusPaidText
                 )
             }
-
-            Spacer(Modifier.height(20.dp))
-
-            Text(
-                text = "Recent transactions",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
-            Spacer(Modifier.height(10.dp))
-
-            TransactionStatusFilterDropdown(
-                selectedFilter = selectedFilter,
-                onFilterSelected = onFilterSelected,
-                modifier = modifier
-            )
-            Spacer(Modifier.height(4.dp))
-
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                itemsIndexed(
-                    items = dashboard.recentTransaction,
-                    key = { _, txn -> txn.id }
-                ) { index, txn ->
-                    TransactionRow(txn)
-                    if (index < dashboard.recentTransaction.lastIndex) {
-                        HorizontalDivider(color = Color(0xFFEDEDED))
-                    }
-                }
-
-            }
-        }
-
-    }
-
-}
-
-@Composable
-private fun TotalIncomeCard(amount: Double) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Total income received",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = formatCurrency(amount),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun SummaryCard(
-    label: String,
-    amount: Double,
-    modifier: Modifier = Modifier,
-    valueColor: Color = Color.Black
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
-            .padding(16.dp)
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = formatCurrency(amount),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = valueColor
-        )
-    }
-}
-
-@Composable
-private fun TransactionRow(transaction: IncomeTransaction) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Column {
-            Text(
-                text = transaction.clientName,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = transaction.transactionId,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted
-            )
-        }
-
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = formatCurrency(transaction.amount),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(Modifier.height(4.dp))
-            transaction.status?.let {
-                StatusBadge(transaction.status)
-            }
         }
     }
-}
 
-@Composable
-private fun StatusBadge(status: IncomeTransactionStatus) {
-    val (bg, text, label) = when (status) {
-        IncomeTransactionStatus.PAID -> Triple(Color(0xFFDCEFD9), Color(0xFF2E7D32), "Paid")
-        IncomeTransactionStatus.PENDING -> Triple(Color(0xFFF5E3C2), Color(0xFF8A6D1E), "Pending")
-    }
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(bg)
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-    ) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = text)
-    }
-}
-
-@Composable
-fun EmptyRecentTransactions() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Default.List, // or Icons.Default.Info
-                contentDescription = null,
-                tint = TextMuted,
-                modifier = Modifier.size(40.dp)
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "No income record yet",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextSecondary
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Your paid invoices will show up once clients pay you",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
-        }
-    }
 }
 
 @Composable
@@ -409,76 +248,76 @@ fun GreetingPreview() {
     }
 }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun TransactionStatusFilterDropdown(
-        selectedFilter: IncomeTransactionFilterStatus,
-        onFilterSelected: (IncomeTransactionFilterStatus) -> Unit,
-        modifier: Modifier = Modifier
-    ) {
-        // Controls whether the dropdown menu is open or closed
-        var expanded by remember { mutableStateOf(false) }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TransactionStatusFilterDropdown(
+    selectedFilter: IncomeTransactionFilterStatus,
+    onFilterSelected: (IncomeTransactionFilterStatus) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Controls whether the dropdown menu is open or closed
+    var expanded by remember { mutableStateOf(false) }
 
-        // List of filter options shown in the dropdown
-        val filterOptions = IncomeTransactionFilterStatus.entries
+    // List of filter options shown in the dropdown
+    val filterOptions = IncomeTransactionFilterStatus.entries
 
-        Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
 
-            // Label above dropdown
-            Text(
-                text = "Filter by status",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 6.dp)
+        // Label above dropdown
+        Text(
+            text = "Filter by status",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = {
+                // Open/close dropdown when user taps the field
+                expanded = !expanded
+            }
+        ) {
+            OutlinedTextField(
+                value = selectedFilter.displayName(),
+                onValueChange = {
+                    // Read-only field, so we do not update text manually
+                },
+                readOnly = true,
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                singleLine = true,
+
+                // Dropdown arrow icon
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(
+                        expanded = expanded
+                    )
+                }
             )
 
-            ExposedDropdownMenuBox(
+            ExposedDropdownMenu(
                 expanded = expanded,
-                onExpandedChange = {
-                    // Open/close dropdown when user taps the field
-                    expanded = !expanded
+                onDismissRequest = {
+                    // Close dropdown when user taps outside
+                    expanded = false
                 }
             ) {
-                OutlinedTextField(
-                    value = selectedFilter.displayName(),
-                    onValueChange = {
-                        // Read-only field, so we do not update text manually
-                    },
-                    readOnly = true,
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    singleLine = true,
+                filterOptions.forEach { filter ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(text = filter.displayName())
+                        },
+                        onClick = {
+                            // 1. Send selected filter to ViewModel
+                            onFilterSelected(filter)
 
-                    // Dropdown arrow icon
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(
-                            expanded = expanded
-                        )
-                    }
-                )
-
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = {
-                        // Close dropdown when user taps outside
-                        expanded = false
-                    }
-                ) {
-                    filterOptions.forEach { filter ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = filter.displayName())
-                            },
-                            onClick = {
-                                // 1. Send selected filter to ViewModel
-                                onFilterSelected(filter)
-
-                                // 2. Close dropdown after selecting item
-                                expanded = false
-                            }
-                        )
-                    }
+                            // 2. Close dropdown after selecting item
+                            expanded = false
+                        }
+                    )
                 }
             }
         }
     }
+}

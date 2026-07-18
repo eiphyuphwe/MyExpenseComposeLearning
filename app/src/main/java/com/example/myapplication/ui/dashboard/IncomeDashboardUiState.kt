@@ -4,7 +4,7 @@ import com.example.myapplication.model.IncomeDashboard
 import com.example.myapplication.model.filter.IncomeTransactionFilterStatus
 
 sealed class IncomeDashboardUiState {
-    data object Loading : IncomeDashboardUiState()
+     object Loading : IncomeDashboardUiState()
 
     data class NoInternet(
         val message: String = "No internet connection"

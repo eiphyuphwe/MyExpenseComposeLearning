@@ -10,7 +10,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 const val taxPercentage: Double = 0.2
 
-class GetIncomeDashboardUseCase(val repository: IncomeDashboardRepository) {
+class GetIncomeDashboardUseCase(private val repository: IncomeDashboardRepository) {
 
     suspend fun getIncomeDashBoard(): IncomeDashboard {
         delay(2000.milliseconds)
