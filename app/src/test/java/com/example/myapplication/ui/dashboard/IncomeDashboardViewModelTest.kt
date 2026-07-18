@@ -1,9 +1,8 @@
-package com.example.myapplication
+package com.example.myapplication.ui.dashboard
 
+import com.example.myapplication.MainDispatcherRule
 import com.example.myapplication.core.NetworkMonitor
 import com.example.myapplication.domain.GetIncomeDashboardUseCase
-import com.example.myapplication.ui.dashboard.IncomeDashboardUiState
-import com.example.myapplication.ui.dashboard.IncomeDashboardViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

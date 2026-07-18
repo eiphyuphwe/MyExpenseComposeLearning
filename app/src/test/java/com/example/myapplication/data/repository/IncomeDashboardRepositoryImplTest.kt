@@ -1,20 +1,16 @@
-package com.example.myapplication
+package com.example.myapplication.data.repository
 
 import com.example.myapplication.data.model.IncomeTransactionResponse
 import com.example.myapplication.data.remote.IncomeTaxApiService
-import com.example.myapplication.data.repository.IncomeDashboardRepository
-import com.example.myapplication.data.repository.IncomeDashboardRepositoryImpl
 import com.example.myapplication.model.IncomeTransactionStatus
 import io.mockk.coEvery
 import io.mockk.mockk
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
 import kotlin.test.assertFailsWith
-
 
 class IncomeDashboardRepositoryImplTest {
 
@@ -51,15 +47,15 @@ class IncomeDashboardRepositoryImplTest {
 
         val result =
             repository.getIncomeTransactions()
-        assertEquals(result.size, 1)
+        TestCase.assertEquals(result.size, 1)
 
 
-        assertEquals(
+        TestCase.assertEquals(
             "INV-001",
             result.first().transactionId
         )
 
-        assertEquals(
+        TestCase.assertEquals(
             IncomeTransactionStatus.PAID,
             result.first().status
         )
@@ -87,7 +83,7 @@ class IncomeDashboardRepositoryImplTest {
             val result = repository.getIncomeTransactions()
 
             // Then
-            assertTrue(result.isEmpty())
+            TestCase.assertTrue(result.isEmpty())
         }
 
     /**

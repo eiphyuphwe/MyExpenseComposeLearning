@@ -1,21 +1,18 @@
-package com.example.myapplication
+package com.example.myapplication.domain
 
 import com.example.myapplication.data.repository.IncomeDashboardRepository
-import com.example.myapplication.domain.GetIncomeDashboardUseCase
 import com.example.myapplication.model.IncomeTransaction
 import com.example.myapplication.model.IncomeTransactionStatus
 import com.example.myapplication.model.filter.IncomeTransactionFilterStatus
 import io.mockk.coEvery
 import io.mockk.mockk
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
 import kotlin.test.assertFailsWith
-
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetIncomeDashboardUseCaseTest {
@@ -72,9 +69,9 @@ class GetIncomeDashboardUseCaseTest {
             val dashboard = useCase.getIncomeDashBoard()
 
             // Then
-            dashboard.totalIncomeReceived?.let { assertEquals(3000.0, it, 0.01) }
-            assertEquals(600.0, dashboard.taxSetAside, 0.01)
-            assertEquals(2400.0, dashboard.netAvailable, 0.01)
+            dashboard.totalIncomeReceived?.let { TestCase.assertEquals(3000.0, it, 0.01) }
+            TestCase.assertEquals(600.0, dashboard.taxSetAside, 0.01)
+            TestCase.assertEquals(2400.0, dashboard.netAvailable, 0.01)
         }
 
     /**
@@ -94,11 +91,11 @@ class GetIncomeDashboardUseCaseTest {
             val dashboard = useCase.getIncomeDashBoard()
 
             // Then
-            dashboard.totalIncomeReceived?.let { assertEquals(0.0, it, 0.01) }
-            assertEquals(0.0, dashboard.taxSetAside, 0.01)
-            assertEquals(0.0, dashboard.netAvailable, 0.01)
+            dashboard.totalIncomeReceived?.let { TestCase.assertEquals(0.0, it, 0.01) }
+            TestCase.assertEquals(0.0, dashboard.taxSetAside, 0.01)
+            TestCase.assertEquals(0.0, dashboard.netAvailable, 0.01)
 
-            assertTrue(dashboard.recentTransaction.isEmpty())
+            TestCase.assertTrue(dashboard.recentTransaction.isEmpty())
         }
 
     /**
@@ -136,9 +133,9 @@ class GetIncomeDashboardUseCaseTest {
             val dashboard = useCase.getIncomeDashBoard()
 
             // Then
-            dashboard.totalIncomeReceived?.let { assertEquals(0.0, it, 0.01) }
-            assertEquals(0.0, dashboard.taxSetAside, 0.01)
-            assertEquals(0.0, dashboard.netAvailable, 0.01)
+            dashboard.totalIncomeReceived?.let { TestCase.assertEquals(0.0, it, 0.01) }
+            TestCase.assertEquals(0.0, dashboard.taxSetAside, 0.01)
+            TestCase.assertEquals(0.0, dashboard.netAvailable, 0.01)
         }
 
     /**
@@ -168,9 +165,9 @@ class GetIncomeDashboardUseCaseTest {
             val dashboard = useCase.getIncomeDashBoard()
 
             // Then
-            dashboard.totalIncomeReceived?.let { assertEquals(1000.0, it, 0.01) }
-            assertEquals(200.0, dashboard.taxSetAside, 0.01)
-            assertEquals(800.0, dashboard.netAvailable, 0.01)
+            dashboard.totalIncomeReceived?.let { TestCase.assertEquals(1000.0, it, 0.01) }
+            TestCase.assertEquals(200.0, dashboard.taxSetAside, 0.01)
+            TestCase.assertEquals(800.0, dashboard.netAvailable, 0.01)
         }
 
     /**
@@ -229,7 +226,7 @@ class GetIncomeDashboardUseCaseTest {
         )
 
         // Then
-        assertEquals(2, dashboard.recentTransaction.size)
+        TestCase.assertEquals(2, dashboard.recentTransaction.size)
     }
 
     @Test
@@ -261,7 +258,7 @@ class GetIncomeDashboardUseCaseTest {
         )
 
         // Then
-        assertEquals(1, dashboard.recentTransaction.size)
+        TestCase.assertEquals(1, dashboard.recentTransaction.size)
     }
 
 }
